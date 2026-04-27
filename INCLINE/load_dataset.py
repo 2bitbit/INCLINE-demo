@@ -1,8 +1,12 @@
+import os
+import json
+
+DATA_ROOT = "/root/autodl-tmp/data"
 
 def load_data_XNLI():
     langs = ['en','ar', 'de', 'el', 'es', 'fr', 'hi', 'ru', 'sw', 'th', 'tr', 'vi', 'zh']
     label_dict = {'entailment':'true', 'contradiction':'false', 'neutral':'inconclusive'}
-    with open("./data/xnli.test.tsv") as f:
+    with open(os.path.join(DATA_ROOT, "xnli.test.tsv")) as f:
         lines = f.readlines()
     copora = [[],[],[],[],[],[],[],[],[],[],[],[],[]]
     for line in lines[1:]:
@@ -44,7 +48,7 @@ def load_data_XNLI():
 def load_data_xcopa():
     langs = ['en','et','id','it','sw','ta','th','tr','vi','zh']
     questions_en = []
-    with open(f".data/xcopa/test.en.jsonl", "r", encoding="utf-8") as f:
+    with open(os.path.join(DATA_ROOT, "xcopa", "test.en.jsonl"), "r", encoding="utf-8") as f:
         lines = f.readlines()
     for line in lines:
         line = json.loads(line)
@@ -53,7 +57,7 @@ def load_data_xcopa():
     question_all,answer_all = [],[]
     for lang in langs:
         questions,answers = [],[]
-        with open(f"../data/xcopa/test.{lang}.jsonl", "r", encoding="utf-8") as f:
+        with open(os.path.join(DATA_ROOT, "xcopa", f"test.{lang}.jsonl"), "r", encoding="utf-8") as f:
             lines = f.readlines()
         for ind in range(len(lines)):
             line = lines[ind]
@@ -85,7 +89,7 @@ def load_data_xstorycloze():
     question_all,answer_all = [],[]
     for lang in langs:
         questions,answers = [],[]
-        with open(f"./data/xstorycloze/spring2016.val.{lang}.tsv.split_20_80_eval.tsv", "r", encoding="utf-8") as f:
+        with open(os.path.join(DATA_ROOT, "xstorycloze", f"spring2016.val.{lang}.tsv.split_20_80_eval.tsv"), "r", encoding="utf-8") as f:
              lines = f.readlines()
         lines = lines[1:]
         for ind in range(len(lines)):
@@ -112,7 +116,7 @@ def load_data_xwinograd():
     question_all,answer_all = [],[]
     for lang in langs:
         questions,answers = [],[]
-        with open(f"./data/xwinograd/test_{lang}.jsonl", "r", encoding="utf-8") as f:
+        with open(os.path.join(DATA_ROOT, "xwinograd", f"test_{lang}.jsonl"), "r", encoding="utf-8") as f:
              lines = f.readlines()
         for line in lines:
             line = json.loads(line)
@@ -143,7 +147,7 @@ def load_data_flores():
         questions,answers = [],[]
         lang = lang_dict[lang_id]
         name = lang_name[lang_id]
-        with open(f"./data/flores101_dataset/devtest/{lang}.devtest") as f:
+        with open(os.path.join(DATA_ROOT, "flores101_dataset", "devtest", f"{lang}.devtest")) as f:
             lines = f.readlines()
         for ind in range(len(lines)):
             line = lines[ind].strip()        
@@ -169,9 +173,9 @@ def load_data_wmt23():
         questions,answers = [],[]
         name = lang_name[lang_id]
         lang = langs[lang_id]
-        with open(f"./data/wmt23/generaltest2023.{lang}-en.src.{lang}") as f:
+        with open(os.path.join(DATA_ROOT, "wmt23", f"generaltest2023.{lang}-en.src.{lang}")) as f:
             lines_nonen = f.readlines()
-        with open(f"./data/wmt23/generaltest2023.{lang}-en.ref.refA.en") as f:
+        with open(os.path.join(DATA_ROOT, "wmt23", f"generaltest2023.{lang}-en.ref.refA.en")) as f:
             lines_en = f.readlines()
         
         for ind in range(len(lines_en)):
@@ -195,7 +199,7 @@ def load_data_xcsqa():
     question_all, answer_all = [],[]
     for lang in langs:
         questions,answers = [],[]
-        with open(f"/bask/homes/f/fksv3157/xngs6460-languages/weixuan/data/xcsqa/dev-{lang}.jsonl") as f:
+        with open(os.path.join(DATA_ROOT, "xcsqa", f"dev-{lang}.jsonl")) as f:
             lines = f.readlines()
         for line in lines:
             line = json.loads(line)

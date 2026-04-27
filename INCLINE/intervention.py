@@ -21,8 +21,10 @@ from causal_trace import (
     predict_from_input,
     collect_embedding_std,
 )
-from dsets import KnownsDataset
 from baukit import Trace, TraceDict
+
+DATA_ROOT = "/root/autodl-tmp/data"
+
 
 torch.set_grad_enabled(False)
 
@@ -146,7 +148,7 @@ def trace_with_patch(
     def untuple(x):
         return x[0] if isinstance(x, tuple) else x
 
-    # Define the model-patching rule.
+    # 定义模型补丁规则
     def patch_rep(x, layer):
         if layer not in patch_spec:
             return x
@@ -156,7 +158,7 @@ def trace_with_patch(
             h[0][t] = torch.tensor(new_mlp_up)[ly]
         return h
 
-    # With the patching rules defined, run the patched model in inference.
+    # 定义好补丁规则后，运行补丁模型的推理
     with torch.no_grad(), nethook.TraceDict(
         model,
         list(patch_spec.keys()),
@@ -178,7 +180,7 @@ import os
 import json
 langs = ['en','et','id','it','sw','ta','th','tr','vi','zh']
 questions_en = []
-with open(f"./data/xcopa/test.en.jsonl", "r", encoding="utf-8") as f:
+with open(os.path.join(DATA_ROOT, "xcopa", "test.en.jsonl"), "r", encoding="utf-8") as f:
     lines = f.readlines()
 for line in lines:
     line = json.loads(line)
@@ -188,7 +190,7 @@ def load_data_xcopa():
     question_all,answer_all = [],[]
     for lang in langs:
         questions,answers = [],[]
-        with open(f"./data/xcopa/test.{lang}.jsonl", "r", encoding="utf-8") as f:
+        with open(os.path.join(DATA_ROOT, "xcopa", f"test.{lang}.jsonl"), "r", encoding="utf-8") as f:
             lines = f.readlines()
         for ind in range(len(lines)):
             line = lines[ind]
@@ -222,9 +224,9 @@ for lang_id in range(1,len(langs)):
     print(lang)
     train_mlp_acts_en,train_mlp_acts_zh,valid_mlp_acts_en,valid_mlp_acts_zh = [],[],[],[]
   
-    with open(f"./data/ncwm/en-{lang}/train.en", encoding="utf-8") as f:
+    with open(os.path.join(DATA_ROOT, "ncwm", f"en-{lang}", "train.en"), encoding="utf-8") as f:
         en_data = f.readlines()
-    with open(f"./data/ncwm/en-{lang}/train.{lang}", encoding="utf-8") as g:
+    with open(os.path.join(DATA_ROOT, "ncwm", f"en-{lang}", f"train.{lang}"), encoding="utf-8") as g:
         zh_data = g.readlines()
     ind = 0    
     while ind < 500 and ind < len(en_data):

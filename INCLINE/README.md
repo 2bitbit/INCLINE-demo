@@ -1,32 +1,30 @@
 <div align="center">
 <h1>
-Inference-Time Cross-Lingual Intervention (INCLINE)
+推理时的跨语言干预 (Inference-Time Cross-Lingual Intervention, INCLINE)
 </h1>
 </div>
 
-This repository contains the data and codes for our paper "[Bridging the Language Gaps in Large Language Models with Inference-Time Cross-Lingual Intervention](https://arxiv.org/pdf/2410.12462)".
 
-### 1. Data 
+### 1. 数据 (Data)
 
-Please download the data of downstream tasks and put it in ./data/
+请下载下游任务数据并将其放置于 `./data/` 或 `/root/autodl-tmp/data` 目录中。
 
-### 2. Intervention
+### 2. 干预实验 (Intervention)
 
-For Discriminative and Generative tasks:
+对于判别式与生成式任务：
 
 ```
 python intervention.py
 ```
 
-For MGSM task:
+对于 MGSM 任务：
 
 ```
 python intervention_llama.py
 ```
 
-
-### Citation
-If you find this work is useful or use the data in your work, please consider cite our paper:
+### 引用 (Citation)
+如果您发现这项工作对您有帮助，或使用了我们的数据，请考虑引用我们的论文：
 
 ```
 @inproceedings{DBLP:conf/acl/WangWHB25,
@@ -52,6 +50,6 @@ If you find this work is useful or use the data in your work, please consider ci
   bibsource    = {dblp computer science bibliography, https://dblp.org}
 }
 ```
-### Acknowledgements
+### 致谢 (Acknowledgements)
 
-This work was funded by the European Union's Horizon Europe (HE) Research and Innovation programme under Grant Agreement No 101070631 and from the UK Research and Innovation (UKRI) under the UK government's HE funding grant No 10039436.
+这项工作由欧盟Horizon Europe (HE)研究与创新计划资助（项目编号 101070631），并由英国研究与创新局(UKRI)在英国政府的 HE 资助基金下资助（项目编号 10039436）。

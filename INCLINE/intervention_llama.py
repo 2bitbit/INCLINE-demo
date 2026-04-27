@@ -21,8 +21,10 @@ from causal_trace import (
     predict_from_input,
     collect_embedding_std,
 )
-from dsets import KnownsDataset
 from transformers import AutoTokenizer,AutoModelForCausalLM,GenerationConfig
+
+DATA_ROOT = "/root/autodl-tmp/data"
+
 
 torch.set_grad_enabled(False)
 
@@ -40,9 +42,8 @@ def load_data_mgsm():
     names = {'en':'English','de':'German','es':'Spanish','fr':'French','ja':'Japanese','ru':'Russian','sw':'Swahili','th':'Thai','zh':'Chinese'}
     question_all, answer_all = [],[]
     for lang in langs:
-        name = names[lang]
         questions,answers = [],[]
-        with open(f"./data/MGSM/mgsm_{lang}.tsv") as f:
+        with open(os.path.join(DATA_ROOT, "MGSM", f"mgsm_{lang}.tsv")) as f:
             lines = f.readlines()
             
         for line in lines:
@@ -208,9 +209,9 @@ for lang_id in range(1,len(langs)):
     print(lang)
     train_mlp_acts_en,train_mlp_acts_zh,valid_mlp_acts_en,valid_mlp_acts_zh = [],[],[],[]
   
-    with open(f"./data/ncwm/en-{lang}/train.en", encoding="utf-8") as f:
+    with open(os.path.join(DATA_ROOT, "ncwm", f"en-{lang}", "train.en"), encoding="utf-8") as f:
         en_data = f.readlines()
-    with open(f"./data/ncwm/en-{lang}/train.{lang}", encoding="utf-8") as g:
+    with open(os.path.join(DATA_ROOT, "ncwm", f"en-{lang}", f"train.{lang}"), encoding="utf-8") as g:
         zh_data = g.readlines()
     ind = 0    
     while ind < 500 and ind < len(en_data):

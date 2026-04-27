@@ -5,7 +5,12 @@ import yaml
 with open("globals.yml", "r") as stream:
     data = yaml.safe_load(stream)
 
-(RESULTS_DIR, DATA_DIR, STATS_DIR, HPARAMS_DIR,) = (
+(
+    RESULTS_DIR,
+    DATA_DIR,
+    STATS_DIR,
+    HPARAMS_DIR,
+) = (
     Path(z)
     for z in [
         data["RESULTS_DIR"],

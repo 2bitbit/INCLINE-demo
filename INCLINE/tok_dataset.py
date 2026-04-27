@@ -5,9 +5,8 @@ from torch.utils.data import Dataset
 
 class TokenizedDataset(Dataset):
     """
-    Converts a dataset of text samples into a dataset of token sequences,
-    as converted by a supplied tokenizer. The tokens come along with position
-    ids and attention masks, they can be supplied direcly to the model.
+    将文本样本数据集转换为由分词器 (tokenizer) 转换的 token 序列数据集。
+    这些 token 带有 position ids 和 attention masks，可以直接提供给模型。
     """
 
     def __init__(self, text_dataset, tokenizer=None, maxlen=None, field="text"):
@@ -39,7 +38,7 @@ class TokenizedDataset(Dataset):
 
 def dict_to_(data, device):
     """
-    Moves a dictionary of tensors to the specified device.
+    将张量 (tensor) 字典移动到指定的设备。
     """
     for k in data:
         data[k] = data[k].to(device)
@@ -48,10 +47,9 @@ def dict_to_(data, device):
 
 def length_collation(token_size):
     """
-    Sorts a batch of sequences and breaks it up into subbatches
-    of same-sized sequences, padding as needed.  Each batch
-    has no more than token_size total tokens (or a single
-    sequence, if the sequence happens to be larger).
+    对一批序列进行排序，并将其分解为相同大小序列的子批次 (subbatches)，
+    根据需要进行填充 (padding)。每个批次包含的 token 总数不超过 token_size 
+    (如果单个序列较大，则包含该单个序列)。
     """
 
     def collate_fn(items):
@@ -79,7 +77,7 @@ def length_collation(token_size):
 
 def make_padded_batch(items):
     """
-    Pads sequences in a batch, so they are all the same length as the longest.
+    在批次中填充序列，使它们都与最长的序列长度相同。
     """
     max_len = max(len(d["input_ids"]) for d in items)
     if max_len == 0:
@@ -92,7 +90,7 @@ def make_padded_batch(items):
 
 def flatten_masked_batch(data, mask):
     """
-    Flattens feature data, ignoring items that are masked out of attention.
+    展平特征数据，忽略 attention mask 之外的项目。
     """
     flat_data = data.view(-1, data.size(-1))
     attended_tokens = mask.view(-1).nonzero()[:, 0]

@@ -63,7 +63,7 @@ def main():
     os.makedirs(result_dir, exist_ok=True)
     os.makedirs(pdf_dir, exist_ok=True)
 
-    # Half precision to let the 20b model fit.
+    # 使用半精度(Half precision)以使得20b模型能够加载。
     torch_dtype = torch.float16 if "20b" in args.model_name else None
 
     mt = ModelAndTokenizer(args.model_name, torch_dtype=torch_dtype)
@@ -78,18 +78,18 @@ def main():
     uniform_noise = False
     if isinstance(noise_level, str):
         if noise_level.startswith("s"):
-            # Automatic spherical gaussian
+            # 自动球形高斯噪声 (Automatic spherical gaussian)
             factor = float(noise_level[1:]) if len(noise_level) > 1 else 1.0
             noise_level = factor * collect_embedding_std(
                 mt, [k["subject"] for k in knowns]
             )
             print(f"Using noise_level {noise_level} to match model times {factor}")
         elif noise_level == "m":
-            # Automatic multivariate gaussian
+            # 自动多元高斯噪声 (Automatic multivariate gaussian)
             noise_level = collect_embedding_gaussian(mt)
             print(f"Using multivariate gaussian to match model noise")
         elif noise_level.startswith("t"):
-            # Automatic d-distribution with d degrees of freedom
+            # 具有 d 个自由度的自动 t 分布 (Automatic d-distribution with d degrees of freedom)
             degrees = float(noise_level[1:])
             noise_level = collect_embedding_tdist(mt, degrees)
         elif noise_level.startswith("u"):
@@ -131,40 +131,33 @@ def main():
 
 
 def trace_with_patch(
-    model,  # The model
-    inp,  # A set of inputs
-    states_to_patch,  # A list of (token index, layername) triples to restore
-    answers_t,  # Answer probabilities to collect
-    tokens_to_mix,  # Range of tokens to corrupt (begin, end)
-    noise=0.1,  # Level of noise to add
+    model,  # 模型
+    inp,  # 输入集合
+    states_to_patch,  # 要恢复的 (token_index, layername) 元组列表
+    answers_t,  # 要收集的答案概率
+    tokens_to_mix,  # 要破坏的 token 范围 (begin, end)
+    noise=0.1,  # 添加的噪声级别
     uniform_noise=False,
-    replace=False,  # True to replace with instead of add noise
-    trace_layers=None,  # List of traced outputs to return
+    replace=False,  # 如果为 True，则替换而不是添加噪声
+    trace_layers=None,  # 要返回的追踪输出列表
 ):
     """
-    Runs a single causal trace.  Given a model and a batch input where
-    the batch size is at least two, runs the batch in inference, corrupting
-    a the set of runs [1...n] while also restoring a set of hidden states to
-    the values from an uncorrupted run [0] in the batch.
+    运行单次因果追踪 (causal trace)。给定一个模型和 batch_size 至少为 2 的批量输入，
+    运行批量推理，破坏批次中 [1...n] 的一系列运行状态，同时恢复批次中未破坏的 [0] 
+    运行的一些隐藏状态。
 
-    The convention used by this function is that the zeroth element of the
-    batch is the uncorrupted run, and the subsequent elements of the batch
-    are the corrupted runs.  The argument tokens_to_mix specifies an
-    be corrupted by adding Gaussian noise to the embedding for the batch
-    inputs other than the first element in the batch.  Alternately,
-    subsequent runs could be corrupted by simply providing different
-    input tokens via the passed input batch.
+    此函数的惯例是，批次中的第 0 个元素是未破坏的运行，而批次中的后续元素是遭到破坏的运行。
+    参数 tokens_to_mix 指定要破坏的 token 范围。除了批次中的第一个元素外，其他输入将被通过
+    向其 embedding 添加高斯噪声来破坏。或者，也可以通过向传入的批量输入提供不同的 token 
+    来破坏后续的运行。
 
-    Then when running, a specified set of hidden states will be uncorrupted
-    by restoring their values to the same vector that they had in the
-    zeroth uncorrupted run.  This set of hidden states is listed in
-    states_to_patch, by listing [(token_index, layername), ...] pairs.
-    To trace the effect of just a single state, this can be just a single
-    token/layer pair.  To trace the effect of restoring a set of states,
-    any number of token indices and layers can be listed.
+    在运行时，一组特定的隐藏状态将通过恢复为第 0 个未破坏运行中相同的向量值来实现“取消破坏” (uncorrupted)。
+    要恢复的这组隐藏状态列在 states_to_patch 中，以 [(token_index, layername), ...] 
+    对的形式列出。要追踪单个状态的影响，可以仅列出一个 token/layer 对。要追踪一组状态恢复的
+    影响，可以列出任意数量的 token_index 和 layer。
     """
 
-    rs = numpy.random.RandomState(1)  # For reproducibility, use pseudorandom noise
+    rs = numpy.random.RandomState(1)  # 为了可重复性，使用伪随机噪声
     if uniform_noise:
         prng = lambda *shape: rs.uniform(-1, 1, shape)
     else:
@@ -179,7 +172,7 @@ def trace_with_patch(
     def untuple(x):
         return x[0] if isinstance(x, tuple) else x
 
-    # Define the model-patching rule.
+    # 定义模型补丁规则 (model-patching rule)
     if isinstance(noise, float):
         noise_fn = lambda x: noise * x
     else:
@@ -187,7 +180,7 @@ def trace_with_patch(
 
     def patch_rep(x, layer):
         if layer == embed_layername:
-            # If requested, we corrupt a range of token embeddings on batch items x[1:]
+            # 如果有要求，我们在批次项目 x[1:] 上破坏一定范围的 token embeddings
             if tokens_to_mix is not None:
                 b, e = tokens_to_mix
                 noise_data = noise_fn(
@@ -200,14 +193,13 @@ def trace_with_patch(
             return x
         if layer not in patch_spec:
             return x
-        # If this layer is in the patch_spec, restore the uncorrupted hidden state
-        # for selected tokens.
+        # 如果这一层在 patch_spec 中，则为选定的 token 恢复未被破坏的隐藏状态
         h = untuple(x)
         for t in patch_spec[layer]:
             h[1:, t] = h[0, t]
         return x
 
-    # With the patching rules defined, run the patched model in inference.
+    # 定义好补丁规则后，在推理过程中运行打好补丁的模型
     additional_layers = [] if trace_layers is None else trace_layers
     with torch.no_grad(), nethook.TraceDict(
         model,
@@ -216,10 +208,10 @@ def trace_with_patch(
     ) as td:
         outputs_exp = model(**inp)
 
-    # We report softmax probabilities for the answers_t token predictions of interest.
+    # 对于感兴趣的 answers_t 的 token 预测，我们汇报 softmax 概率。
     probs = torch.softmax(outputs_exp.logits[1:, -1, :], dim=1).mean(dim=0)[answers_t]
 
-    # If tracing all layers, collect all activations together to return.
+    # 如果追踪了所有的层，将收集到的所有激活值打包返回。
     if trace_layers is not None:
         all_traced = torch.stack(
             [untuple(td[layer].output).detach().cpu() for layer in trace_layers], dim=2
@@ -230,16 +222,16 @@ def trace_with_patch(
 
 
 def trace_with_repatch(
-    model,  # The model
-    inp,  # A set of inputs
-    states_to_patch,  # A list of (token index, layername) triples to restore
-    states_to_unpatch,  # A list of (token index, layername) triples to re-randomize
-    answers_t,  # Answer probabilities to collect
-    tokens_to_mix,  # Range of tokens to corrupt (begin, end)
-    noise=0.1,  # Level of noise to add
+    model,  # 模型
+    inp,  # 一组输入
+    states_to_patch,  # 要恢复的 (token_index, layername) 元组列表
+    states_to_unpatch,  # 要重新随机化的 (token_index, layername) 元组列表
+    answers_t,  # 要收集的答案概率
+    tokens_to_mix,  # 要破坏的 token 范围 (begin, end)
+    noise=0.1,  # 要添加的噪声级别
     uniform_noise=False,
 ):
-    rs = numpy.random.RandomState(1)  # For reproducibility, use pseudorandom noise
+    rs = numpy.random.RandomState(1)  # 为了重现性，使用伪随机噪声
     if uniform_noise:
         prng = lambda *shape: rs.uniform(-1, 1, shape)
     else:
@@ -256,10 +248,10 @@ def trace_with_repatch(
     def untuple(x):
         return x[0] if isinstance(x, tuple) else x
 
-    # Define the model-patching rule.
+    # 定义模型补丁规则
     def patch_rep(x, layer):
         if layer == embed_layername:
-            # If requested, we corrupt a range of token embeddings on batch items x[1:]
+            # 如果有请求，我们在批次项目 x[1:] 上破坏一系列的 token embeddings
             if tokens_to_mix is not None:
                 b, e = tokens_to_mix
                 x[1:, b:e] += noise * torch.from_numpy(
@@ -268,8 +260,7 @@ def trace_with_repatch(
             return x
         if first_pass or (layer not in patch_spec and layer not in unpatch_spec):
             return x
-        # If this layer is in the patch_spec, restore the uncorrupted hidden state
-        # for selected tokens.
+        # 如果这一层在 patch_spec 中，为选定的 token 恢复未破坏的隐藏状态。
         h = untuple(x)
         for t in patch_spec.get(layer, []):
             h[1:, t] = h[0, t]
@@ -277,7 +268,7 @@ def trace_with_repatch(
             h[1:, t] = untuple(first_pass_trace[layer].output)[1:, t]
         return x
 
-    # With the patching rules defined, run the patched model in inference.
+    # 在定义好补丁规则后，运行打补丁的模型的推理。
     for first_pass in [True, False] if states_to_unpatch else [False]:
         with torch.no_grad(), nethook.TraceDict(
             model,
@@ -288,7 +279,7 @@ def trace_with_repatch(
             if first_pass:
                 first_pass_trace = td
 
-    # We report softmax probabilities for the answers_t token predictions of interest.
+    # 我们报告感兴趣的 answers_t 的 token 预测的 softmax 概率。
     probs = torch.softmax(outputs_exp.logits[1:, -1, :], dim=1).mean(dim=0)[answers_t]
 
     return probs
@@ -308,8 +299,8 @@ def calculate_hidden_flow(
     expect=None,
 ):
     """
-    Runs causal tracing over every token/layer combination in the network
-    and returns a dictionary numerically summarizing the results.
+    对网络中的每一个 token/layer 组合进行因果追踪 (causal tracing)，
+    并返回一个以数值形式总结结果的字典。
     """
     inp = make_inputs(mt.tokenizer, [prompt] * (samples + 1))
     with torch.no_grad():
@@ -444,9 +435,8 @@ def trace_important_window(
 
 class ModelAndTokenizer:
     """
-    An object to hold on to (or automatically download and hold)
-    a GPT-style language model and tokenizer.  Counts the number
-    of layers.
+    一个用于保存（或自动下载并保存）GPT 风格语言模型和分词器 (tokenizer) 
+    的对象。计算并记录网络层数。
     """
 
     def __init__(
@@ -592,7 +582,7 @@ def plot_all_flow(mt, prompt, subject=None):
         plot_hidden_flow(mt, prompt, subject, kind=kind)
 
 
-# Utilities for dealing with tokens
+# 用于处理 token 的工具类函数
 def make_inputs(tokenizer, prompts, device="cuda"):
     token_lists = [tokenizer.encode(p) for p in prompts]
     maxlen = max(len(t) for t in token_lists)
@@ -673,7 +663,7 @@ def get_embedding_cov(mt):
         try:
             maxlen = model.config.n_positions
         except:
-            maxlen = 100  # Hack due to missing setting in GPT2-NeoX.
+            maxlen = 100  # Hack: 由于 GPT2-NeoX 中缺少设置。
         return TokenizedDataset(raw_ds["train"], tokenizer, maxlen=maxlen)
 
     ds = get_ds()
@@ -730,11 +720,11 @@ def collect_embedding_gaussian(mt):
 
 
 def collect_embedding_tdist(mt, degree=3):
-    # We will sample sqrt(degree / u) * sample, where u is from the chi2[degree] dist.
-    # And this will give us variance is (degree / degree - 2) * cov.
-    # Therefore if we want to match the sample variance, we should
-    # reduce cov by a factor of (degree - 2) / degree.
-    # In other words we should be sampling sqrt(degree - 2 / u) * sample.
+    # 我们将采样 sqrt(degree / u) * sample，其中 u 服从卡方分布 chi2[degree]。
+    # 这将使我们的方差变为 (degree / degree - 2) * cov。
+    # 因此，如果我们想要匹配样本方差，我们应该
+    # 将 cov 缩小 (degree - 2) / degree 的因子。
+    # 换句话说，我们应该采样 sqrt(degree - 2 / u) * sample。
     u_sample = torch.from_numpy(
         numpy.random.RandomState(2).chisquare(df=degree, size=1000)
     )
