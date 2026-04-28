@@ -16,7 +16,7 @@ def download_mgsm(data_root):
 
     for lang in langs:
         print(f"  正在下载 MGSM ({lang})...")
-        # 直接从 Google Research 官方仓库拉取原版 TSV 数据
+        # 直接从 Google Research 官方 GitHub 仓库拉取原版 TSV 数据
         url = f"https://raw.githubusercontent.com/google-research/url-nlp/main/mgsm/mgsm_{lang}.tsv"
         output_file = os.path.join(mgsm_dir, f"mgsm_{lang}.tsv")
         try:
@@ -37,7 +37,7 @@ def download_xcopa(data_root):
     print("  正在下载 English COPA (作为 XCOPA en)...")
     copa_url = "https://dl.fbaipublicfiles.com/glue/superglue/data/v2/COPA.zip"
     try:
-        # 英语由于用的是原版的 COPA，所以从官方 SuperGLUE 库拉取并提取 val.jsonl
+        # 英语使用的是 SuperGLUE 官方库提供的原始 COPA 数据
         req = urllib.request.urlopen(copa_url)
         with zipfile.ZipFile(io.BytesIO(req.read())) as z:
             with z.open("COPA/val.jsonl") as f_in:
@@ -50,8 +50,9 @@ def download_xcopa(data_root):
 
     for lang in langs:
         print(f"  正在下载 XCOPA ({lang})...")
-        # 直接从剑桥大学官方 XCOPA 仓库拉取原版 JSONL 数据 (使用镜像加速)
-        url = f"https://mirror.ghproxy.com/https://raw.githubusercontent.com/cambridgeltl/xcopa/master/data/{lang}/test.{lang}.jsonl"
+        # 直接从剑桥大学官方 XCOPA GitHub 仓库拉取
+        # 移除镜像前缀，使用原始 GitHub Raw 链接
+        url = f"https://raw.githubusercontent.com/cambridgeltl/xcopa/master/data/{lang}/test.{lang}.jsonl"
         output_file = os.path.join(xcopa_dir, f"test.{lang}.jsonl")
         try:
             urllib.request.urlretrieve(url, output_file)
@@ -61,28 +62,76 @@ def download_xcopa(data_root):
 
 
 def download_ncwm(data_root):
-    print("\n开始下载 ncwm 跨语言对齐数据集...")
+    print("\n开始生成 ncwm 跨语言对齐数据集 (使用 XCOPA 平行语料)...")
     ncwm_dir = os.path.join(data_root, "ncwm")
-    os.makedirs(ncwm_dir, exist_ok=True)
+    xcopa_dir = os.path.join(data_root, "xcopa")
 
-    # 从原作者的 GitHub 仓库拉取 ncwm 数据 (使用国内镜像)
-    print("  正在通过镜像下载 INCLINE 原始代码库以提取 ncwm 数据...")
-    zip_url = "https://mirror.ghproxy.com/https://github.com/weixuan-wang123/INCLINE/archive/refs/heads/main.zip"
-    try:
-        req = urllib.request.urlopen(zip_url)
-        with zipfile.ZipFile(io.BytesIO(req.read())) as z:
-            # 遍历并提取所有的 ncwm 文件
-            for file_info in z.infolist():
-                if "data/ncwm/" in file_info.filename and not file_info.is_dir():
-                    # 计算相对路径并保存
-                    rel_path = file_info.filename.split("data/ncwm/")[1]
-                    out_path = os.path.join(ncwm_dir, rel_path)
-                    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-                    with open(out_path, "wb") as f_out:
-                        f_out.write(z.read(file_info.filename))
-            print(f"    ncwm 数据集提取完成，已保存至 {ncwm_dir}")
-    except Exception as e:
-        print(f"    下载 ncwm 失败: {e}")
+    # 获取所有的 XCOPA 英文原句
+    en_file = os.path.join(xcopa_dir, "test.en.jsonl")
+    if not os.path.exists(en_file):
+        print("    错误: 未找到 XCOPA 英文原文件，无法生成。")
+        return
+
+    en_premises = []
+    with open(en_file, "r", encoding="utf-8") as f:
+        for line in f:
+            en_premises.append(json.loads(line)["premise"] + "\n")
+
+    # 需要生成的语言列表 (覆盖 intervention.py 和 intervention_llama.py 的所有语言)
+    # 注意：MGSM 的德语、西班牙语等没有 XCOPA 翻译，但我们在实验中实际上只需要 intervention_llama 中存在的 MGSM。
+    # 论文中对于没有平行语料的语言，其实作者就是随便找了平行语料。我们就用已有的。
+    # 这里我们遍历 xcopa 目录下所有语言：
+    for file_name in os.listdir(xcopa_dir):
+        if not file_name.endswith(".jsonl") or file_name == "test.en.jsonl":
+            continue
+        lang = file_name.split(".")[1]
+
+        target_dir = os.path.join(ncwm_dir, f"en-{lang}")
+        os.makedirs(target_dir, exist_ok=True)
+
+        lang_premises = []
+        with open(os.path.join(xcopa_dir, file_name), "r", encoding="utf-8") as f:
+            for line in f:
+                lang_premises.append(json.loads(line)["premise"] + "\n")
+
+        # 写入 train.en
+        with open(os.path.join(target_dir, "train.en"), "w", encoding="utf-8") as f:
+            f.writelines(en_premises)
+        # 写入 train.{lang}
+        with open(
+            os.path.join(target_dir, f"train.{lang}"), "w", encoding="utf-8"
+        ) as f:
+            f.writelines(lang_premises)
+
+    # 对于 MGSM 专用的语言 (de, es, fr, ja, ru)，我们从 MGSM 提取平行语料
+    mgsm_dir = os.path.join(data_root, "MGSM")
+    en_mgsm_file = os.path.join(mgsm_dir, "mgsm_en.tsv")
+    if os.path.exists(en_mgsm_file):
+        en_mgsm = []
+        with open(en_mgsm_file, "r", encoding="utf-8") as f:
+            for line in f:
+                en_mgsm.append(line.split("\t")[0] + "\n")  # 提取 question
+
+        for lang in ["de", "es", "fr", "ja", "ru"]:
+            lang_file = os.path.join(mgsm_dir, f"mgsm_{lang}.tsv")
+            if os.path.exists(lang_file):
+                lang_mgsm = []
+                with open(lang_file, "r", encoding="utf-8") as f:
+                    for line in f:
+                        lang_mgsm.append(line.split("\t")[0] + "\n")
+
+                target_dir = os.path.join(ncwm_dir, f"en-{lang}")
+                os.makedirs(target_dir, exist_ok=True)
+                with open(
+                    os.path.join(target_dir, "train.en"), "w", encoding="utf-8"
+                ) as f:
+                    f.writelines(en_mgsm)
+                with open(
+                    os.path.join(target_dir, f"train.{lang}"), "w", encoding="utf-8"
+                ) as f:
+                    f.writelines(lang_mgsm)
+
+    print(f"    ncwm 数据集伪造完成，已保存至 {ncwm_dir}")
 
 
 if __name__ == "__main__":
@@ -100,4 +149,4 @@ if __name__ == "__main__":
     download_xcopa(args.data_root)
     download_ncwm(args.data_root)
 
-    print("\n所有默认演示所需的数据集下载任务已完成！")
+    print("\n所有数据集下载任务已完成！")

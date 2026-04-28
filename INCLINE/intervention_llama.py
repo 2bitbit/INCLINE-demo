@@ -148,7 +148,6 @@ def get_out_mean(model, prompt, device,index):
         MLP_up_value = [np.mean(ret[mlp_up].output[0].detach().cpu().numpy(),axis=0) for mlp_up in MLP_up]
         MLP_down_value = [np.mean(ret[mlp_down].output[0].detach().cpu().numpy(),axis=0) for mlp_down in MLP_down]
         ATT_post_value = [np.mean(ret[att_post].output[0].detach().cpu().numpy(),axis=0) for att_post in ATT_post]
-        emb_value = EMB[0]
 
         return mlp_act,ATT_value, MLP_value,MLP_up_value,MLP_down_value,ATT_post_value
     

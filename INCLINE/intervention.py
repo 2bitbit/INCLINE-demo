@@ -79,7 +79,7 @@ def eval(ans_res,reference,lg):
 def get_out(model, prompt, device,index): 
 
     model.eval()
-    ATT = [f"transformer.h.{i}.self_attention.att_out" for i in range(LAYERS)]
+    ATT = [f"transformer.h.{i}.self_attention" for i in range(LAYERS)]
     QKV = [f"transformer.h.{i}.self_attention.query_key_value" for i in range(LAYERS)]
     MLP = [f"transformer.h.{i}.mlp" for i in range(LAYERS)]
     MLP_up = [f"transformer.h.{i}.mlp.dense_h_to_4h" for i in range(LAYERS)]
@@ -87,7 +87,7 @@ def get_out(model, prompt, device,index):
     MLP_down = [f"transformer.h.{i}.mlp.dense_4h_to_h" for i in range(LAYERS)]
     ATT_post = [f"transformer.h.{i}.post_attention_layernorm" for i in range(LAYERS)]
     EMB = [f"transformer.word_embeddings_layernorm"]
-    HEADS = [f"transformer.h.{i}.self_attention.head_out" for i in range(LAYERS)]
+    HEADS = [f"transformer.h.{i}.self_attention.dense" for i in range(LAYERS)]
     
     with torch.no_grad():
         with TraceDict(model, ATT+MLP+MLP_up+MLP_down+ATT_post+EMB+QKV+HEADS+MLP_act) as ret:
@@ -107,7 +107,7 @@ def get_out(model, prompt, device,index):
 def get_out_mean(model, prompt, device,index): 
 
     model.eval()
-    ATT = [f"transformer.h.{i}.self_attention.att_out" for i in range(LAYERS)]
+    ATT = [f"transformer.h.{i}.self_attention" for i in range(LAYERS)]
     QKV = [f"transformer.h.{i}.self_attention.query_key_value" for i in range(LAYERS)]
     MLP = [f"transformer.h.{i}.mlp" for i in range(LAYERS)]
     MLP_up = [f"transformer.h.{i}.mlp.dense_h_to_4h" for i in range(LAYERS)]
@@ -115,7 +115,7 @@ def get_out_mean(model, prompt, device,index):
     MLP_down = [f"transformer.h.{i}.mlp.dense_4h_to_h" for i in range(LAYERS)]
     ATT_post = [f"transformer.h.{i}.post_attention_layernorm" for i in range(LAYERS)]
     EMB = [f"transformer.word_embeddings_layernorm"]
-    HEADS = [f"transformer.h.{i}.self_attention.head_out" for i in range(LAYERS)]
+    HEADS = [f"transformer.h.{i}.self_attention.dense" for i in range(LAYERS)]
     
     with torch.no_grad():
         with TraceDict(model, ATT+MLP+MLP_up+MLP_down+ATT_post+EMB+QKV+HEADS+MLP_act) as ret:
