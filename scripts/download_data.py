@@ -50,14 +50,39 @@ def download_xcopa(data_root):
 
     for lang in langs:
         print(f"  正在下载 XCOPA ({lang})...")
-        # 直接从剑桥大学官方 XCOPA 仓库拉取原版 JSONL 数据
-        url = f"https://raw.githubusercontent.com/cambridgeltl/xcopa/master/data/{lang}/test.{lang}.jsonl"
+        # 直接从剑桥大学官方 XCOPA 仓库拉取原版 JSONL 数据 (使用镜像加速)
+        url = f"https://mirror.ghproxy.com/https://raw.githubusercontent.com/cambridgeltl/xcopa/master/data/{lang}/test.{lang}.jsonl"
         output_file = os.path.join(xcopa_dir, f"test.{lang}.jsonl")
         try:
             urllib.request.urlretrieve(url, output_file)
             print(f"    成功保存至 {output_file}")
         except Exception as e:
             print(f"    下载 XCOPA ({lang}) 失败: {e}")
+
+
+def download_ncwm(data_root):
+    print("\n开始下载 ncwm 跨语言对齐数据集...")
+    ncwm_dir = os.path.join(data_root, "ncwm")
+    os.makedirs(ncwm_dir, exist_ok=True)
+
+    # 从原作者的 GitHub 仓库拉取 ncwm 数据 (使用国内镜像)
+    print("  正在通过镜像下载 INCLINE 原始代码库以提取 ncwm 数据...")
+    zip_url = "https://mirror.ghproxy.com/https://github.com/weixuan-wang123/INCLINE/archive/refs/heads/main.zip"
+    try:
+        req = urllib.request.urlopen(zip_url)
+        with zipfile.ZipFile(io.BytesIO(req.read())) as z:
+            # 遍历并提取所有的 ncwm 文件
+            for file_info in z.infolist():
+                if "data/ncwm/" in file_info.filename and not file_info.is_dir():
+                    # 计算相对路径并保存
+                    rel_path = file_info.filename.split("data/ncwm/")[1]
+                    out_path = os.path.join(ncwm_dir, rel_path)
+                    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+                    with open(out_path, "wb") as f_out:
+                        f_out.write(z.read(file_info.filename))
+            print(f"    ncwm 数据集提取完成，已保存至 {ncwm_dir}")
+    except Exception as e:
+        print(f"    下载 ncwm 失败: {e}")
 
 
 if __name__ == "__main__":
@@ -73,5 +98,6 @@ if __name__ == "__main__":
 
     download_mgsm(args.data_root)
     download_xcopa(args.data_root)
+    download_ncwm(args.data_root)
 
     print("\n所有默认演示所需的数据集下载任务已完成！")
