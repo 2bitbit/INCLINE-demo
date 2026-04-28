@@ -30,6 +30,12 @@ def main():
     # 注意：目前的脚本中硬编码了 DATA_ROOT="/root/autodl-tmp/data"
     os.environ["DATA_ROOT"] = args.data_root
 
+    # [修复核心问题]：强制设置 Hugging Face 环境变量，防止每次重启终端后缓存丢失！
+    # 强制告诉所有脚本去数据盘找下载好的大模型，而不是默认的 ~/.cache 目录
+    os.environ["HF_HOME"] = "/root/autodl-tmp/hf_cache"
+    # 强制走国内镜像（防止网络中断）
+    os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
+
     print("=" * 60)
     print("INCLINE 演示运行程序")
     print(f"预期的数据根目录: {args.data_root}")
