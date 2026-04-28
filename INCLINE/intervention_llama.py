@@ -203,9 +203,9 @@ def trace_with_patch(
 
 
 
-for lang_id in range(1,len(langs)):
+for lang_id in tqdm(range(1,len(langs)), desc="语言进度"):
     lang = langs[lang_id]
-    print(lang)
+    print(f"\n>>> 正在处理语言: {lang}")
     train_mlp_acts_en,train_mlp_acts_zh,valid_mlp_acts_en,valid_mlp_acts_zh = [],[],[],[]
   
     with open(os.path.join(DATA_ROOT, "ncwm", f"en-{lang}", "train.en"), encoding="utf-8") as f:
@@ -255,11 +255,11 @@ for lang_id in range(1,len(langs)):
     train_mlp_acts_zh = np.array(train_mlp_acts_zh, dtype=np.float32)
     train_mlp_acts_en = np.array(train_mlp_acts_en, dtype=np.float32)
     transformation_matrixs = []    
-    for i in range(LAYERS):
+    for i in tqdm(range(LAYERS), desc=f"  [{lang}] 计算对齐矩阵", leave=False):
         transformation_matrix = np.linalg.lstsq(train_mlp_acts_zh[:,i,:], train_mlp_acts_en[:,i,:], rcond=None)[0]    
         transformation_matrixs.append(transformation_matrix)
         
-    counts = len(question_all[lang_id])
+    counts = (100 if 100 < len(question_all[lang_id]) else len(question_all[lang_id]))
     sigmas = [-1,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3-0.2,-0.1,0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]
     for sigma in tqdm(sigmas, desc=f"[{lang}] 推断 sigma", leave=False):
         ans_res = []
