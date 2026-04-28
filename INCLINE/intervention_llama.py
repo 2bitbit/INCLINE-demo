@@ -113,7 +113,7 @@ def get_out(model, prompt, device,index):
     ATT_post = [f"model.layers.{i}.post_attention_layernorm" for i in range(LAYERS)]
     with torch.no_grad():
         with TraceDict(model, ATT+ATT_q+ATT_k+ATT_v+ATT_o+MLP+MLP_gate+MLP_act+MLP_up+MLP_down+ATT_post) as ret:
-            output = model(prompt, output_hidden_states = True,output_attentions=True)
+            output = model(prompt, output_hidden_states=True)
        
         mlp_act = [ret[mlp_act].output[0][index].detach().cpu().numpy() for mlp_act in MLP_act]
         ATT_value = [ret[att_value].output[0][index].detach().cpu().numpy() for att_value in ATT]
@@ -253,7 +253,8 @@ for lang_id in range(1,len(langs)):
 
 
 
-    train_mlp_acts_zh, train_mlp_acts_en = np.array(train_mlp_acts_zh),np.array(train_mlp_acts_en)    
+    train_mlp_acts_zh = np.array(train_mlp_acts_zh, dtype=np.float32)
+    train_mlp_acts_en = np.array(train_mlp_acts_en, dtype=np.float32)
     transformation_matrixs = []    
     for i in range(LAYERS):
         transformation_matrix = np.linalg.lstsq(train_mlp_acts_zh[:,i,:], train_mlp_acts_en[:,i,:], rcond=None)[0]    

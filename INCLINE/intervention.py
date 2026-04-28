@@ -91,7 +91,7 @@ def get_out(model, prompt, device,index):
     
     with torch.no_grad():
         with TraceDict(model, ATT+MLP+MLP_up+MLP_down+ATT_post+EMB+QKV+HEADS+MLP_act) as ret:
-            output = model(prompt, output_hidden_states = True,output_attentions=True)
+            output = model(prompt, output_hidden_states=True)
 
         ATT_value = [ret[att_value].output[0,index,:].detach().cpu().numpy() for att_value in ATT]
         MLP_value = [ret[mlp_value].output[0,index,:].detach().cpu().numpy() for mlp_value in MLP]
@@ -119,7 +119,7 @@ def get_out_mean(model, prompt, device,index):
     
     with torch.no_grad():
         with TraceDict(model, ATT+MLP+MLP_up+MLP_down+ATT_post+EMB+QKV+HEADS+MLP_act) as ret:
-            output = model(prompt, output_hidden_states = True,output_attentions=True)
+            output = model(prompt, output_hidden_states=True)
 
         ATT_value = [np.mean(ret[att_value].output[0].detach().cpu().numpy(),axis=0) for att_value in ATT]
         MLP_value = [np.mean(ret[mlp_value].output[0].detach().cpu().numpy(),axis=0) for mlp_value in MLP]
@@ -263,7 +263,8 @@ for lang_id in range(1,len(langs)):
 
 
 
-    train_mlp_acts_zh, train_mlp_acts_en = np.array(train_mlp_acts_zh),np.array(train_mlp_acts_en)    
+    train_mlp_acts_zh = np.array(train_mlp_acts_zh, dtype=np.float32)
+    train_mlp_acts_en = np.array(train_mlp_acts_en, dtype=np.float32)
     transformation_matrixs = []    
     for i in range(LAYERS):
         transformation_matrix = np.linalg.lstsq(train_mlp_acts_zh[:,i,:], train_mlp_acts_en[:,i,:], rcond=None)[0]    
