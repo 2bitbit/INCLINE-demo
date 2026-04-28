@@ -12,7 +12,7 @@ def run_script(script_name):
     # TODO: 以下执行需要实际的GPU环境。
     # 当在AutoDL上运行时，这将把模型加载到CUDA上并执行干预（intervention）。
     try:
-        subprocess.run([sys.executable, script_name], check=True)
+        subprocess.run([sys.executable, script_name], check=True, cwd="INCLINE")
     except subprocess.CalledProcessError as e:
         print(f"运行 {script_name} 时发生错误: {e}")
     except Exception as e:
