@@ -271,14 +271,14 @@ for lang_id in range(1,len(langs)):
         transformation_matrixs.append(transformation_matrix)
 
     counts = len(question_all[lang_id])
-    for sigma in [-1,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3-0.2,-0.1,0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1]:
+    for sigma in tqdm([-1,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3-0.2,-0.1,0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1], desc=f"[{lang}] 推断 sigma", leave=False):
         ans_res = []
-        for ind in range(counts):
+        for ind in tqdm(range(counts), desc="  评估问题", leave=False):
             question = question_all[lang_id][ind]
             answer = answer_all[lang_id][ind]
 
             inputs = mt.tokenizer.encode(question, return_tensors="pt").to("cuda")
-            att_val,mlp_val,mlp_up,mlp_down,att_post = get_out(mt.model,inputs,mt.model.device,-1)
+            att_val, mlp_val, mlp_up, mlp_down, att_post, _head, _mlp_act = get_out(mt.model,inputs,mt.model.device,-1)
             mlp_val = np.array(mlp_val)
 
             dires = []
