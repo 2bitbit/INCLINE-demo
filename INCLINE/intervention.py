@@ -270,7 +270,7 @@ for lang_id in tqdm(range(1,len(langs)), desc="语言进度"):
         transformation_matrix = np.linalg.lstsq(train_mlp_acts_zh[:,i,:], train_mlp_acts_en[:,i,:], rcond=None)[0]    
         transformation_matrixs.append(transformation_matrix)
 
-    counts = (100 if 100 < len(question_all[lang_id]) else len(question_all[lang_id]))
+    counts = (30 if 30 < len(question_all[lang_id]) else len(question_all[lang_id]))
     for sigma in tqdm([-1,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3-0.2,-0.1,0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1], desc=f"[{lang}] 推断 sigma", leave=False):
         ans_res = []
         for ind in tqdm(range(counts), desc="  评估问题", leave=False):
