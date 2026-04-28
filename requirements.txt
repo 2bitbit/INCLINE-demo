@@ -2,7 +2,7 @@ torch>=2.0.0
 transformers>=4.30.0
 accelerate
 numpy
-baukit
+git+https://github.com/davidbau/baukit
 tqdm
 datasets
 matplotlib
