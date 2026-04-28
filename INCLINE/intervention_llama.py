@@ -141,7 +141,7 @@ def get_out_mean(model, prompt, device,index):
     
     with torch.no_grad():
         with TraceDict(model, ATT+ATT_q+ATT_k+ATT_v+ATT_o+MLP+MLP_gate+MLP_act+MLP_up+MLP_down+ATT_post) as ret:
-            output = model(prompt, output_hidden_states = True,output_attentions=True)
+            output = model(prompt, output_hidden_states=True)
        
         mlp_act = [np.mean(ret[mlp_act].output[0].detach().cpu().numpy(),axis=0) for mlp_act in MLP_act]
         ATT_value = [np.mean(ret[att_value].output[0].detach().cpu().numpy(),axis=0) for att_value in ATT]
@@ -193,7 +193,6 @@ def trace_with_patch(
                     generation_config=GenerationConfig(
                         max_new_tokens=600,
                         do_sample=False,
-                        temperature=0.0,  
                     ),
                 ).tolist()
         real_output_ids = [output_id[len(input_ids_w_attnmask.input_ids[i]) :] for i, output_id in enumerate(output_ids)]

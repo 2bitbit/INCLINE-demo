@@ -93,13 +93,13 @@ def get_out(model, prompt, device,index):
         with TraceDict(model, ATT+MLP+MLP_up+MLP_down+ATT_post+EMB+QKV+HEADS+MLP_act) as ret:
             output = model(prompt, output_hidden_states=True)
 
-        ATT_value = [ret[att_value].output[0,index,:].detach().cpu().numpy() for att_value in ATT]
-        MLP_value = [ret[mlp_value].output[0,index,:].detach().cpu().numpy() for mlp_value in MLP]
-        MLP_up_value = [ret[mlp_up].output[0,index,:].detach().cpu().numpy() for mlp_up in MLP_up]
-        MLP_act_value = [ret[mlp_act].output[0,index,:].detach().cpu().numpy() for mlp_act in MLP_act] 
-        MLP_down_value = [ret[mlp_down].output[0,index,:].detach().cpu().numpy() for mlp_down in MLP_down]
-        ATT_post_value = [ret[att_post].output[0,index,:].detach().cpu().numpy() for att_post in ATT_post]
-        HEAD_value = [ret[head_value].output[:,index,:].detach().cpu().numpy() for head_value in HEADS] 
+        ATT_value = [ret[att_value].output[0][index,:].detach().cpu().numpy() for att_value in ATT]
+        MLP_value = [ret[mlp_value].output[0][index,:].detach().cpu().numpy() for mlp_value in MLP]
+        MLP_up_value = [ret[mlp_up].output[0][index,:].detach().cpu().numpy() for mlp_up in MLP_up]
+        MLP_act_value = [ret[mlp_act].output[0][index,:].detach().cpu().numpy() for mlp_act in MLP_act] 
+        MLP_down_value = [ret[mlp_down].output[0][index,:].detach().cpu().numpy() for mlp_down in MLP_down]
+        ATT_post_value = [ret[att_post].output[0][index,:].detach().cpu().numpy() for att_post in ATT_post]
+        HEAD_value = [ret[head_value].output[0][index,:].detach().cpu().numpy() for head_value in HEADS] 
         
 
         return ATT_value, MLP_value,MLP_up_value,MLP_down_value,ATT_post_value,HEAD_value,MLP_act_value
