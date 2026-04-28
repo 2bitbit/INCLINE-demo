@@ -178,6 +178,8 @@ def trace_with_patch(
 
 import os
 import json
+import tqdm as _tqdm_module
+from tqdm import tqdm
 langs = ['en','et','id','it','sw','ta','th','tr','vi','zh']
 # Removed fragile dependency on test.en.jsonl
 def load_data_xcopa():
@@ -222,7 +224,8 @@ for lang_id in range(1,len(langs)):
         en_data = f.readlines()
     with open(os.path.join(DATA_ROOT, "ncwm", f"en-{lang}", f"train.{lang}"), encoding="utf-8") as g:
         zh_data = g.readlines()
-    ind = 0    
+    ind = 0
+    pbar = tqdm(total=min(500, len(en_data)), desc=f"  [{lang}] 提取对齐特征")
     while ind < 500 and ind < len(en_data):
         if ind % 2 == 0: 
             sent = zh_data[ind]
@@ -235,7 +238,7 @@ for lang_id in range(1,len(langs)):
             continue
         attention_mask = encodings['attention_mask'].to('cuda')
 
-        att_val,mlp_val,mlp_up,mlp_down,att_post = get_out_mean(mt.model,input_ids,mt.model.device,-1)
+        att_val, mlp_val, mlp_up, mlp_down, att_post, _head, _mlp_act = get_out_mean(mt.model,input_ids,mt.model.device,-1)
         mlp_val = np.array(mlp_val)
 
         train_mlp_acts_zh.append(mlp_val[:,:])
@@ -248,11 +251,14 @@ for lang_id in range(1,len(langs)):
         input_ids = encodings['input_ids'].to('cuda')
         attention_mask = encodings['attention_mask'].to('cuda')
 
-        att_val,mlp_val,mlp_up,mlp_down,att_post = get_out_mean(mt.model,input_ids,mt.model.device,-1)
+        att_val, mlp_val, mlp_up, mlp_down, att_post, _head, _mlp_act = get_out_mean(mt.model,input_ids,mt.model.device,-1)
         mlp_val = np.array(mlp_val)
 
         train_mlp_acts_en.append(mlp_val[:,:])
         ind += 1
+        pbar.update(1)
+
+    pbar.close()
 
 
 

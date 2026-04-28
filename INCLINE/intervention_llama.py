@@ -2,6 +2,7 @@ import os, re, json
 import torch
 import json
 import numpy as np
+from tqdm import tqdm
 from collections import defaultdict
 from util import nethook
 
@@ -212,7 +213,8 @@ for lang_id in range(1,len(langs)):
         en_data = f.readlines()
     with open(os.path.join(DATA_ROOT, "ncwm", f"en-{lang}", f"train.{lang}"), encoding="utf-8") as g:
         zh_data = g.readlines()
-    ind = 0    
+    ind = 0
+    pbar = tqdm(total=min(500, len(en_data)), desc=f"  [{lang}] 提取对齐特征")
     while ind < 500 and ind < len(en_data):
         # sent = zh_data[ind]
         if ind % 2 == 0: 
@@ -245,6 +247,9 @@ for lang_id in range(1,len(langs)):
 
         train_mlp_acts_en.append(mlp_val[:,:])
         ind += 1
+        pbar.update(1)
+
+    pbar.close()
 
 
 
