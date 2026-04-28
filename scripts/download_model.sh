@@ -16,14 +16,14 @@ echo "============================================================"
 echo "开始下载第一个模型: bigscience/bloomz-7b1-mt"
 echo "============================================================"
 # 重点修复：排除巨大且重复的 .bin 文件，只下载 safetensors 格式！
-huggingface-cli download bigscience/bloomz-7b1-mt --exclude "*.bin" --resume-download
+hf download bigscience/bloomz-7b1-mt --exclude "*.bin"
 
 echo "============================================================"
 echo "开始下载第二个模型: Mathoctopus/Parallel_7B"
 echo "============================================================"
 # 注意：根据官方HF主页，Mathoctopus 模型只有 .bin 格式，没有 safetensors！
 # 所以这里绝对不能加 --exclude "*.bin"，必须老老实实下载完整的 .bin 权重。
-huggingface-cli download Mathoctopus/Parallel_7B --resume-download
+hf download Mathoctopus/Parallel_7B
 
 echo "============================================================"
 echo "所有必须的模型已成功下载至 /root/autodl-tmp/hf_cache！"
