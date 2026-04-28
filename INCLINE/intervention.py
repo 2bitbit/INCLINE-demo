@@ -225,7 +225,7 @@ for lang_id in range(1,len(langs)):
     with open(os.path.join(DATA_ROOT, "ncwm", f"en-{lang}", f"train.{lang}"), encoding="utf-8") as g:
         zh_data = g.readlines()
     ind = 0
-    pbar = tqdm(total=min(500, len(en_data)), desc=f"  [{lang}] 提取对齐特征")
+    pbar = tqdm(total=(500 if 500 < len(en_data) else len(en_data)), desc=f"  [{lang}] 提取对齐特征")
     while ind < 500 and ind < len(en_data):
         if ind % 2 == 0: 
             sent = zh_data[ind]
