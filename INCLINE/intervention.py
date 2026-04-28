@@ -6,7 +6,7 @@ import numpy as np
 
 from collections import defaultdict
 from util import nethook
-from util.globals import DATA_DIR
+
 from causal_trace import (
     ModelAndTokenizer,
     layername,

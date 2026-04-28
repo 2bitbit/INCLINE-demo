@@ -4,7 +4,7 @@ import json
 import numpy as np
 from collections import defaultdict
 from util import nethook
-from util.globals import DATA_DIR
+
 from baukit import Trace, TraceDict
 import torch.nn.functional as F
 from causal_trace import (
@@ -71,7 +71,7 @@ question_all,answer_all = load_data_mgsm()
 
 
 def extract_last_num(text: str) -> float:
-    text = re.sub(r"(\d),(\d)", "\g<1>\g<2>", text)  
+    text = re.sub(r"(\d),(\d)", r"\g<1>\g<2>", text)  
     res = re.findall(r"(\d+(\.\d+)?)", text) 
     if len(res) > 0:
         num_str = res[-1][0]
