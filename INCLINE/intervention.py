@@ -225,8 +225,8 @@ for lang_id in tqdm(range(1,len(langs)), desc="语言进度"):
     with open(os.path.join(DATA_ROOT, "ncwm", f"en-{lang}", f"train.{lang}"), encoding="utf-8") as g:
         zh_data = g.readlines()
     ind = 0
-    pbar = tqdm(total=(500 if 500 < len(en_data) else len(en_data)), desc=f"  [{lang}] 提取对齐特征")
-    while ind < 500 and ind < len(en_data):
+    pbar = tqdm(total=(50 if 50 < len(en_data) else len(en_data)), desc=f"  [{lang}] 提取对齐特征")
+    while ind < 50 and ind < len(en_data):
         if ind % 2 == 0: 
             sent = zh_data[ind]
         else:
@@ -271,38 +271,41 @@ for lang_id in tqdm(range(1,len(langs)), desc="语言进度"):
         transformation_matrixs.append(transformation_matrix)
 
     counts = (30 if 30 < len(question_all[lang_id]) else len(question_all[lang_id]))
-    for sigma in tqdm([-1,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3-0.2,-0.1,0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1], desc=f"[{lang}] 推断 sigma", leave=False):
+
+    # ─── 关键优化：预计算每道题的激活，避免对每个sigma重复推理 ───
+    cached = []
+    for ind in tqdm(range(counts), desc=f"  [{lang}] 预计算问题激活", leave=False):
+        question = question_all[lang_id][ind]
+        answer   = answer_all[lang_id][ind]
+
+        inputs = mt.tokenizer.encode(question, return_tensors="pt").to("cuda")
+        att_val, mlp_val, mlp_up, mlp_down, att_post, _head, _mlp_act = get_out(mt.model, inputs, mt.model.device, -1)
+        mlp_val = np.array(mlp_val, dtype=np.float32)
+
+        dires = np.array([np.dot([mlp_val[i]], transformation_matrixs[i])[0]
+                          for i in range(LAYERS)], dtype=np.float32)
+
+        inp = make_inputs(mt.tokenizer, [question])
+        ntoks = inp["input_ids"].shape[1]
+        inp_question_answer = make_inputs(mt.tokenizer, [f'{question} {answer}'])
+
+        cached.append((mlp_val, dires, inp, ntoks, inp_question_answer, question, answer))
+
+    # ─── 对每个sigma复用已缓存的激活，无需重新推理 ───
+    for sigma in tqdm([-1,-0.9,-0.8,-0.7,-0.6,-0.5,-0.4,-0.3-0.2,-0.1,0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1],
+                      desc=f"[{lang}] 推断 sigma", leave=False):
         ans_res = []
-        for ind in tqdm(range(counts), desc="  评估问题", leave=False):
-            question = question_all[lang_id][ind]
-            answer = answer_all[lang_id][ind]
-
-            inputs = mt.tokenizer.encode(question, return_tensors="pt").to("cuda")
-            att_val, mlp_val, mlp_up, mlp_down, att_post, _head, _mlp_act = get_out(mt.model,inputs,mt.model.device,-1)
-            mlp_val = np.array(mlp_val)
-
-            dires = []
-            for i in range(LAYERS):
-                dire = np.dot([mlp_val[i]], transformation_matrixs[i])[0]
-                dires.append(dire)
-            dires = np.array(dires)
+        for mlp_val, dires, inp, ntoks, inp_question_answer, question, answer in cached:
             mlp_dires = mlp_val + sigma * dires
-
-
-            inp = make_inputs(mt.tokenizer, [question])
-            ntoks = inp["input_ids"].shape[1]       
-            question_answer = f'{question} {answer}'
-            inp_question_answer = make_inputs(mt.tokenizer, [question_answer])
 
             r = trace_with_patch(
                     mt.model,
                     inp_question_answer,
                     [(ntoks-1, layername(mt.model, layer,'mlp')) for layer in range(LAYERS)],
-                    new_mlp_up = mlp_dires,
+                    new_mlp_up=mlp_dires,
                     question=question,
                     answer=answer)
             ans_res.append(r)
 
-
-        EM,F1 = eval(ans_res,answer_all,lang_id)
-        print(langs[lang_id],sigma,EM)
+        EM, F1 = eval(ans_res, answer_all, lang_id)
+        print(langs[lang_id], sigma, EM)
