@@ -51,7 +51,7 @@ def load_data_mgsm():
             question, answer = line[0],line[1]
             prompt_no_input = (
                   "Below is an instruction that describes a task. "
-                    f"Write a response that appropriately completes the request in {name}. Please answer in {name}.\n\n"
+                    f"Write a response that appropriately completes the request in {names[lang]}. Please answer in {names[lang]}.\n\n"
                     "### Instruction:\n{query}\n\n### Response:"
                 )
             prompt = prompt_no_input.format(query=question)

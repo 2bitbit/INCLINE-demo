@@ -179,13 +179,7 @@ def trace_with_patch(
 import os
 import json
 langs = ['en','et','id','it','sw','ta','th','tr','vi','zh']
-questions_en = []
-with open(os.path.join(DATA_ROOT, "xcopa", "test.en.jsonl"), "r", encoding="utf-8") as f:
-    lines = f.readlines()
-for line in lines:
-    line = json.loads(line)
-    ques = line['question']
-    questions_en.append(ques)
+# Removed fragile dependency on test.en.jsonl
 def load_data_xcopa():
     question_all,answer_all = [],[]
     for lang in langs:
@@ -196,7 +190,7 @@ def load_data_xcopa():
             line = lines[ind]
             line = json.loads(line)
             premise,choice1,choice2,label = line['premise'],line['choice1'],line['choice2'],line['label']
-            question = questions_en[ind]
+            question = line['question'] # Fetch directly from current line instead of questions_en[ind]
             prompt_question = f'Here is a premise: "{premise}". A: "{choice1}" B: "{choice2}" What is the {question}? "A" or "B"?'
 
             if int(label) == 0:

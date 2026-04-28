@@ -55,7 +55,7 @@ def main():
     aa("--replace", default=0, type=int)
     args = parser.parse_args()
 
-    modeldir = f'r{args.replace}_{args.model_name.replace("/", "_")}'
+    modeldir = f"r{args.replace}_{args.model_name.replace('/', '_')}"
     modeldir = f"n{args.noise_level}_" + modeldir
     output_dir = args.output_dir.format(model_name=modeldir)
     result_dir = f"{output_dir}/cases"
@@ -64,9 +64,9 @@ def main():
     os.makedirs(pdf_dir, exist_ok=True)
 
     # 使用半精度(Half precision)以使得20b模型能够加载。
-    torch_dtype = torch.float16 if "20b" in args.model_name else None
+    dtype = torch.float16 if "20b" in args.model_name else None
 
-    mt = ModelAndTokenizer(args.model_name, torch_dtype=torch_dtype)
+    mt = ModelAndTokenizer(args.model_name, dtype=dtype)
 
     if args.fact_file is None:
         knowns = KnownsDataset(DATA_DIR)
@@ -124,7 +124,7 @@ def main():
                 continue
             plot_result = dict(numpy_result)
             plot_result["kind"] = kind
-            pdfname = f'{pdf_dir}/{str(numpy_result["answer"]).strip()}_{known_id}{kind_suffix}.pdf'
+            pdfname = f"{pdf_dir}/{str(numpy_result['answer']).strip()}_{known_id}{kind_suffix}.pdf"
             if known_id > 200:
                 continue
             plot_trace_heatmap(plot_result, savepdf=pdfname)
@@ -143,16 +143,16 @@ def trace_with_patch(
 ):
     """
     运行单次因果追踪 (causal trace)。给定一个模型和 batch_size 至少为 2 的批量输入，
-    运行批量推理，破坏批次中 [1...n] 的一系列运行状态，同时恢复批次中未破坏的 [0] 
+    运行批量推理，破坏批次中 [1...n] 的一系列运行状态，同时恢复批次中未破坏的 [0]
     运行的一些隐藏状态。
 
     此函数的惯例是，批次中的第 0 个元素是未破坏的运行，而批次中的后续元素是遭到破坏的运行。
     参数 tokens_to_mix 指定要破坏的 token 范围。除了批次中的第一个元素外，其他输入将被通过
-    向其 embedding 添加高斯噪声来破坏。或者，也可以通过向传入的批量输入提供不同的 token 
+    向其 embedding 添加高斯噪声来破坏。或者，也可以通过向传入的批量输入提供不同的 token
     来破坏后续的运行。
 
     在运行时，一组特定的隐藏状态将通过恢复为第 0 个未破坏运行中相同的向量值来实现“取消破坏” (uncorrupted)。
-    要恢复的这组隐藏状态列在 states_to_patch 中，以 [(token_index, layername), ...] 
+    要恢复的这组隐藏状态列在 states_to_patch 中，以 [(token_index, layername), ...]
     对的形式列出。要追踪单个状态的影响，可以仅列出一个 token/layer 对。要追踪一组状态恢复的
     影响，可以列出任意数量的 token_index 和 layer。
     """
@@ -201,11 +201,14 @@ def trace_with_patch(
 
     # 定义好补丁规则后，在推理过程中运行打好补丁的模型
     additional_layers = [] if trace_layers is None else trace_layers
-    with torch.no_grad(), nethook.TraceDict(
-        model,
-        [embed_layername] + list(patch_spec.keys()) + additional_layers,
-        edit_output=patch_rep,
-    ) as td:
+    with (
+        torch.no_grad(),
+        nethook.TraceDict(
+            model,
+            [embed_layername] + list(patch_spec.keys()) + additional_layers,
+            edit_output=patch_rep,
+        ) as td,
+    ):
         outputs_exp = model(**inp)
 
     # 对于感兴趣的 answers_t 的 token 预测，我们汇报 softmax 概率。
@@ -270,11 +273,14 @@ def trace_with_repatch(
 
     # 在定义好补丁规则后，运行打补丁的模型的推理。
     for first_pass in [True, False] if states_to_unpatch else [False]:
-        with torch.no_grad(), nethook.TraceDict(
-            model,
-            [embed_layername] + list(patch_spec.keys()) + list(unpatch_spec.keys()),
-            edit_output=patch_rep,
-        ) as td:
+        with (
+            torch.no_grad(),
+            nethook.TraceDict(
+                model,
+                [embed_layername] + list(patch_spec.keys()) + list(unpatch_spec.keys()),
+                edit_output=patch_rep,
+            ) as td,
+        ):
             outputs_exp = model(**inp)
             if first_pass:
                 first_pass_trace = td
@@ -435,7 +441,7 @@ def trace_important_window(
 
 class ModelAndTokenizer:
     """
-    一个用于保存（或自动下载并保存）GPT 风格语言模型和分词器 (tokenizer) 
+    一个用于保存（或自动下载并保存）GPT 风格语言模型和分词器 (tokenizer)
     的对象。计算并记录网络层数。
     """
 
@@ -445,7 +451,7 @@ class ModelAndTokenizer:
         model=None,
         tokenizer=None,
         low_cpu_mem_usage=False,
-        torch_dtype=None,
+        dtype=None,
     ):
         if tokenizer is None:
             assert model_name is not None
@@ -453,7 +459,10 @@ class ModelAndTokenizer:
         if model is None:
             assert model_name is not None
             model = AutoModelForCausalLM.from_pretrained(
-                model_name, low_cpu_mem_usage=low_cpu_mem_usage, torch_dtype=torch_dtype, device_map="auto"
+                model_name,
+                low_cpu_mem_usage=low_cpu_mem_usage,
+                dtype=dtype,
+                device_map="auto",
             )
             nethook.set_requires_grad(False, model)
             model.eval()
@@ -478,17 +487,17 @@ def layername(model, num, kind=None):
     if hasattr(model, "transformer"):
         if kind == "word_embeddings_layernorm":
             return "transformer.word_embeddings_layernorm"
-        return f'transformer.h.{num}{"" if kind is None else "." + kind}'
+        return f"transformer.h.{num}{'' if kind is None else '.' + kind}"
     if hasattr(model, "model"):
         if kind == "embed_tokens":
             return "model.embed_tokens"
-        return f'model.layers.{num}{"" if kind is None else "." + kind}'
+        return f"model.layers.{num}{'' if kind is None else '.' + kind}"
     if hasattr(model, "gpt_neox"):
         if kind == "embed":
             return "gpt_neox.embed_in"
         if kind == "attn":
             kind = "attention"
-        return f'gpt_neox.layers.{num}{"" if kind is None else "." + kind}'
+        return f"gpt_neox.layers.{num}{'' if kind is None else '.' + kind}"
     assert False, "unknown transformer structure"
 
 
