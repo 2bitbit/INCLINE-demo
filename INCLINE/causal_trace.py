@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from dsets import KnownsDataset
+
 from tok_dataset import (
     TokenizedDataset,
     dict_to_,
@@ -19,7 +19,7 @@ from tok_dataset import (
     length_collation,
 )
 from util import nethook
-from util.globals import DATA_DIR
+
 from util.runningstats import Covariance, tally
 
 
